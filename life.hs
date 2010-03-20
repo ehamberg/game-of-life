@@ -5,9 +5,11 @@ import Data.IORef
 import System.Random
 import Control.Monad (when)
 
+-- dimensions of our cellular space
 width  = 80 :: Int
 height = 60 :: Int
 
+-- utility function: draws a square at (x,y) with size w×h
 drawQuad :: GLdouble -> GLdouble -> GLdouble -> GLdouble -> IO ()
 drawQuad x y w h =
     renderPrimitive Quads $ do
@@ -16,6 +18,7 @@ drawQuad x y w h =
         vertex (Vertex3 (x+w) (y-h) 0)
         vertex (Vertex3  x    (y-h) 0)
 
+-- draw each cell as a square whose colour show if the cell is live or dead
 display :: IORef [[Bool]] -> IO ()
 display c = do
     cells <- readIORef c
@@ -34,6 +37,7 @@ display c = do
 
     swapBuffers
 
+-- takes a two-dimensional list and returns the neighbours of (x,y)
 neighbours :: [[a]] -> (Int,Int) -> [a]
 neighbours m (x,y) = map (\(x',y') -> m !! y' !! x') $ filter valid neighbours'
     where neighbours'   = [(x-1,y-1),(x,y-1),(x+1,y-1), -- over
@@ -43,6 +47,7 @@ neighbours m (x,y) = map (\(x',y') -> m !! y' !! x') $ filter valid neighbours'
           w             = length (head m)
           valid (x',y') = x' >= 0 && x' < w && y' >= 0 && y' < h
 
+-- updates all cells according to the rules in liveOrDead
 update :: IORef [[Bool]] -> IO ()
 update c = do
     cells <- readIORef c
@@ -52,31 +57,23 @@ update c = do
     f <- mapM (\(x,y) -> do
             let cell = cells !! y !! x
             let ns   = neighbours cells (x,y)
-            return $ live cell ns
+            return $ liveOrDead cell ((length . filter id) ns)
         ) coords
 
     writeIORef c (nLists width f)
 
     display c
 
-live :: Bool -> [Bool] -> Bool
-live c ns
-    | c && live < 2      = False
-    | c && live > 3      = False
-    | c                  = True
-    | not c && live == 3 = True
-    | otherwise          = c
-    where live = (length . filter id) ns
-
+-- survival rule: a live cell only lives on if it has 2 or 3 live neighbours
+-- birth rule: a dead cell becomes a live cell if it has 3 live neighbours
+liveOrDead :: Bool -> Int -> Bool
+liveOrDead True nLive = nLive `elem` [2,3]
+liveOrDead False nLive = nLive == 3
 
 -- split a list into sublists of length n
 nLists :: Int -> [a] -> [[a]]
 nLists _ [] = []
 nLists n ls = take n ls : nLists n (drop n ls)
-
-keypress :: IORef [[Bool]] -> KeyboardMouseCallback
-keypress c key state _ _ =
-    when (key == Char ' ' && state == Down) (update c)
 
 main :: IO ()
 main = do
@@ -93,6 +90,5 @@ main = do
     windowSize            $= Size 800 600
     displayCallback       $= display cells
     idleCallback          $= Just (update cells)
-    keyboardMouseCallback $= Just (keypress cells)
     gluOrtho2D 0 1 0 1    -- orthogonal projection
     mainLoop              -- start main loop
