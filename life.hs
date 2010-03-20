@@ -38,12 +38,13 @@ display c = do
 -- takes a two-dimensional list and returns the neighbours of (x,y)
 neighbours :: [[a]] -> (Int,Int) -> [a]
 neighbours m (x,y) = map (\(x',y') -> m !! y' !! x') $ filter valid neighbours'
-    where neighbours'   = [(x-1,y-1),(x,y-1),(x+1,y-1), -- over
-                           (x-1,y),(x+1,y),             -- left/right
-                           (x-1,y+1),(x,y+1),(x+1,y+1)] -- under
-          h             = length m
-          w             = length (head m)
-          valid (x',y') = x' >= 0 && x' < w && y' >= 0 && y' < h
+    where height'       = length m
+          width'        = length (head m)
+          valid (x',y') = x' >= 0 && x' < width' && y' >= 0 && y' < height'
+          neighbours'   = [(x-1,y-1),(x,y-1),(x+1,y-1), -- neighbours over
+                           (x-1,y),(x+1,y),             -- neighbours left/right
+                           (x-1,y+1),(x,y+1),(x+1,y+1)] -- neighbours under
+
 
 -- updates all cells according to the rules in liveOrDead
 update :: IORef [[Bool]] -> IO ()
