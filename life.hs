@@ -1,6 +1,5 @@
-import Graphics.Rendering.OpenGL hiding (get)
 import Graphics.UI.GLUT hiding (get)
-import Graphics.Rendering.GLU.Raw
+import Graphics.Rendering.GLU.Raw (gluOrtho2D)
 import Data.IORef
 import System.Random
 
@@ -53,13 +52,13 @@ update c = do
 
     let coords = [(x,y) | y <- [0..(height-1)], x <- [0..(width-1)]]
 
-    f <- mapM (\(x,y) -> do
+    nextGen <- mapM (\(x,y) -> do
             let cell = cells !! y !! x
             let ns   = neighbours cells (x,y)
             return $ liveOrDead cell ((length . filter id) ns)
         ) coords
 
-    writeIORef c (nLists width f)
+    writeIORef c (nLists width nextGen)
 
     display c
 
@@ -77,12 +76,10 @@ nLists n ls = take n ls : nLists n (drop n ls)
 main :: IO ()
 main = do
     g <- newStdGen
-    (_,_) <- getArgsAndInitialize
-
-    cells <- newIORef []
+    _ <- getArgsAndInitialize
 
     -- random starting values
-    writeIORef cells ((nLists width . take (width*height) . randoms) g)
+    cells <- newIORef ((nLists width . take (width*height) . randoms) g)
 
     _ <- createWindow "Conway's Game of Life"
     initialDisplayMode    $= [DoubleBuffered]
