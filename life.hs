@@ -3,7 +3,6 @@ import Graphics.UI.GLUT hiding (get)
 import Graphics.Rendering.GLU.Raw
 import Data.IORef
 import System.Random
-import Control.Monad (when)
 
 -- dimensions of our cellular space
 width  = 80 :: Int
